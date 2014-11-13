@@ -1,0 +1,57 @@
+function prepare_virtpwn_vm()
+{
+  NAME=${1}
+  SOURCE_VM=${2}
+  mkdir -p ${PCKSTCK_DIR}/${NAME}
+  cat << EOF > ${PCKSTCK_DIR}/${NAME}/machine.yml
+---
+# Base virt domain to clone.
+base: ${SOURCE_VM}
+user: pckstck
+# Initial provisioning.
+init:
+    # With no fabfile specified, internal one is used.
+    # See virtpwn/fabric/fabfile.py for available tasks.
+    tasks:
+        - ssh_copy_id: testpasswd
+        - hostname
+        - add_admin_user
+EOF
+}
+
+function run_virtpwn_vm()
+{
+  NAME=${1}
+  cd ${PCKSTCK_DIR}/${NAME}
+  virtpwn up
+}
+
+function stop_virtpwn_vm()
+{
+  NAME=${1}
+  cd ${PCKSTCK_DIR}/${NAME}
+  virtpwn stop -f
+}
+
+function drop_virtpwn_vm()
+{
+  NAME=${1}
+  cd ${PCKSTCK_DIR}/${NAME}
+  virtpwn delete -f
+}
+
+function get_vm_ip()
+{
+  NAME=${1}
+  cd ${PCKSTCK_DIR}/${NAME}
+  virtpwn info 2>&1 | grep "IP address" | awk '{print $3}'
+}
+
+function collect_logs()
+{
+  NAME=${1}
+  cd ${PCKSTCK_DIR}/${NAME}
+  IP=$(get_vm_ip ${NAME})
+  ssh "root@${IP}" "tar -cjvf ${NAME}.tar.bz /etc /var/tmp/packstack /var/log /root/pckstck.conf" && \
+  scp "root@${IP}:${NAME}.tar.bz" "${NAME}.tar.bz"
+}

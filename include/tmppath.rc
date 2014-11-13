@@ -1,0 +1,10 @@
+PCKSTCK_TMP='/var/tmp/pckstck'
+
+function prepare_tmp_path()
+{
+  mkdir -p ${PCKSTCK_TMP}
+  DATE=$(date +"%d-%m-%Y-%H-%M")
+  mkdir -p ${PCKSTCK_TMP}/${DATE} || exit 1
+  export PCKSTCK_DIR=${PCKSTCK_TMP}/${DATE}
+}
+

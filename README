@@ -1,0 +1,6 @@
+To presetup please install required packages:
+# sudo yum -y install python-argh python-blessings python-lxml libvirt-client virt-install fabric git PyYAML sshfs sshpass
+As virtpwn does not have package yet(TODO: package virtpwn):
+# git clone https://github.com/xbezdick/virtpwn.git && cd virtpwn && python setup.py develop --user
+And as root prepare virtual machines for clonning:
+# sudo prepare_vms.sh
