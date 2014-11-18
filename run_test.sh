@@ -11,7 +11,7 @@ function RUN()
   NAME=${2}
   mkdir -p ${PCKSTCK_DIR}/${NAME}
   echo "Runnning ${COMMAND} on ${NAME} ..."
-  "$@" > ${PCKSTCK_DIR}/${NAME}/${COMMAND}.log 2>&1
+  "$@" >> ${PCKSTCK_DIR}/${NAME}/${COMMAND}.log 2>&1
   ret=$?
   if [[ $ret -eq 0 ]]
   then
