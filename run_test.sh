@@ -175,6 +175,7 @@ PACKSTACK_BRANCH='master'
 PACKSTACK_GIT='https://github.com/stackforge/packstack.git'
 OPM_BRANCH='master'
 OPM_GIT='https://github.com/redhat-openstack/openstack-puppet-modules.git'
+KEEP_VMS=false
 
 # options that can be empty
 REPO=""
