@@ -52,6 +52,6 @@ function collect_logs()
   NAME=${1}
   cd ${PCKSTCK_DIR}/${NAME}
   IP=$(get_vm_ip ${NAME})
-  ssh "root@${IP}" "tar -cjvf ${NAME}.tar.bz /etc /var/tmp/packstack /var/log /root/pckstck.conf" && \
+  ssh "root@${IP}" "tar -cjvf ${NAME}.tar.bz /etc /var/tmp/packstack /var/log /root/pckstck.conf"
   scp "root@${IP}:${NAME}.tar.bz" "${NAME}.tar.bz"
 }
