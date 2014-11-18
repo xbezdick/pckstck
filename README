@@ -4,3 +4,6 @@ As virtpwn does not have package yet(TODO: package virtpwn):
 # git clone https://github.com/xbezdick/virtpwn.git && cd virtpwn && python setup.py develop --user
 And as root prepare virtual machines for clonning:
 # sudo prepare_vms.sh
+
+To finally run test do for example:
+#./run_test.sh  -m RSPECTestsInfra -o https://github.com/strider/openstack-puppet-modules.git -n f20,f21,c7 -r
