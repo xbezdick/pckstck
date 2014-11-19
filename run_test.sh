@@ -40,8 +40,6 @@ function prepare_multinode_vms()
   for vm in ${SOURCE_VMS//,/ }; do
     for vm_type in ${VM_TYPES//,/ }; do
       RUN prepare_virtpwn_vm "${vm_type}-${vm}" "${vm}" || return 1
-      # magical sleep to get VM up
-      sleep 30s;
       RUN run_virtpwn_vm "${vm_type}-${vm}" || return 1
     done
   done
