@@ -1,0 +1,160 @@
+function install_repo_on_vm()
+{
+  NAME=${1}
+  RPM_REPO_URL=${2}
+  cd ${PCKSTCK_DIR}/${NAME}
+  IP=$(get_vm_ip ${NAME})
+  ssh "root@${IP}" "yum -y install ${RPM_REPO_URL}"
+}
+
+function update_vm()
+{
+  NAME=${1}
+  cd ${PCKSTCK_DIR}/${NAME}
+  IP=$(get_vm_ip ${NAME})
+  ssh "root@${IP}" 'yum clean all; yum -y update'
+}
+
+function selinux_permissive_vm()
+{
+  NAME=${1}
+  cd ${PCKSTCK_DIR}/${NAME}
+  IP=$(get_vm_ip ${NAME})
+  ssh "root@${IP}" 'setenforce 0; sed -i -e "s/enforcing/permissive/" /etc/sysconfig/selinux' && \
+  ssh "root@${IP}" 'yum -y install policycoreutils-python auditd' && \
+  ssh "root@${IP}" 'service auditd restart'
+}
+
+function setup_packstack()
+{
+  NAME=${1}
+  PACKSTACK_URI=${2}
+  PACKSTACK_BRANCH=${3}
+  OPM_URI="${4%*/openstack-puppet-modules.git}/"
+  OPM_BRANCH=${5}
+  echo ${OPM_URI}
+  cd ${PCKSTCK_DIR}/${NAME}
+  IP=$(get_vm_ip ${NAME})
+  ssh "root@${IP}" 'yum -y install git PyYAML python-setuptools' && \
+  ssh "root@${IP}" "git clone ${PACKSTACK_URI} packstack" && \
+  ssh "root@${IP}" "cd packstack; git checkout ${PACKSTACK_BRANCH}" && \
+  ssh "root@${IP}" "sed -i -e 's,^MODULES_REPO.*$,MODULES_REPO = ('\''${OPM_URI}'\'',' packstack/setup.py" && \
+  ssh "root@${IP}" "sed -i -e 's/^MODULES_BRANCH.*$/MODULES_BRANCH = '\''${OPM_BRANCH}'\''/' packstack/setup.py" && \
+  ssh "root@${IP}" "cd packstack; python setup.py install_puppet_modules" && \
+  ssh "root@${IP}" "cd packstack; python setup.py install"
+}
+
+function configure_packstack()
+{
+  NAME=${1}
+  PACKSTACK_OPTIONS=${2}
+  cd ${PCKSTCK_DIR}/${NAME}
+  IP=$(get_vm_ip ${NAME})
+  ssh "root@${IP}" "packstack --gen-answer-file=/root/pckstck.conf" && \
+  for config in ${PACKSTACK_OPTIONS//;/ }; do
+    OPT=$(echo ${config} | cut -f1 -d'=')
+    VAL=$(echo ${config} | cut -f2 -d'=')
+    if [ "${OPT}" != "" ] && [ "${VAL}" != "" ]; then
+      ssh "root@${IP}" "sed -i -e 's;^${OPT}.*$;${OPT}=${VAL};' /root/pckstck.conf" || return 1
+    fi
+  done
+  # print config to output
+  ssh "root@${IP}" "cat /root/pckstck.conf"
+}
+
+function run_packstack_config()
+{
+  NAME=${1}
+  CONFIG=${2}
+  cd ${PCKSTCK_DIR}/${NAME}
+  IP=$(get_vm_ip ${NAME})
+  ssh "root@${IP}" "packstack -d --answer-file=${CONFIG}"
+}
+
+function prepare_node()
+{
+  NAME=${1}
+  RPM_REPO_URL=${2}
+  if [ "${RPM_REPO_URL}" != "" ]
+  then
+    RUN install_repo_on_vm ${NAME} ${RPM_REPO_URL} || return 1
+  fi
+  RUN update_vm ${NAME} && \
+  RUN selinux_permissive_vm ${NAME}
+}
+
+function run_controller()
+{
+  NAME=${1}
+  PACKSTACK_URI=${2}
+  PACKSTACK_BRANCH=${3}
+  OPM_URI=${4}
+  OPM_BRANCH=${5}
+  PACKSTACK_OPTIONS=${6}
+  RUN setup_packstack ${NAME} ${PACKSTACK_URI} ${PACKSTACK_BRANCH} ${OPM_URI} ${OPM_BRANCH} && \
+  RUN configure_packstack ${NAME} ${PACKSTACK_OPTIONS} && \
+  RUN run_packstack_config ${NAME} /root/pckstck.conf | tee ${PCKSTCK_DIR}/${NAME}/packstack.log && \
+  RUN run_packstack_config ${NAME} /root/pckstck.conf | tee ${PCKSTCK_DIR}/${NAME}/packstack2.log
+
+  # ensure we have local stored logs
+  RUN collect_logs ${NAME}
+}
+
+function run_allinone()
+{
+  SOURCE_VM=${1}
+  PACKSTACK_URI=${2}
+  PACKSTACK_BRANCH=${3}
+  OPM_URI=${4}
+  OPM_BRANCH=${5}
+  RPM_REPO_URL=${6}
+  PACKSTACK_OPTIONS=${7}
+  for vm in ${SOURCE_VMS//,/ }; do
+    prepare_node "allinone-${vm}" "${RPM_REPO_URL}" && \
+    run_collector "allinone-${vm}" "${PACKSTACK_URI}" "${PACKSTACK_BRANCH}" \
+	"${OPM_URI}" "${OPM_BRANCH}" &
+  done
+  wait
+}
+
+function run_multinode()
+{
+  SOURCE_VM=${1}
+  PACKSTACK_URI=${2}
+  PACKSTACK_BRANCH=${3}
+  OPM_URI=${4}
+  OPM_BRANCH=${5}
+  RPM_REPO_URL=${6}
+  PACKSTACK_OPTIONS=${7}
+  for vm in ${SOURCE_VMS//,/ }; do
+    for vm_type in ${VM_TYPES//,/ }; do
+      prepare_node "${vm_type}-${vm}" "${RPM_REPO_URL}" &
+    done
+  done
+  wait
+  for vm in ${SOURCE_VMS//,/ }; do
+    CONTROLLER=""
+    COMPUTE=""
+    NETWORK=""
+    for vm_type in ${VM_TYPES//,/ }; do
+      NAME="${vm_type}-${vm}"
+      cd ${PCKSTCK_DIR}/${NAME}
+      IP=$(get_vm_ip ${NAME})
+      echo "${vm_type}" | grep -q "controller" && CONTROLLER="${IP},"
+      echo "${vm_type}" | grep -q "compute*" && COMPUTE="${COMPUTE}${IP},"
+      echo "${vm_type}" | grep -q "network*" && NETWORK="${NETWORK}${IP},"
+    done
+    if  [ "${CONTROLLER}" != "" ] && [ "${COMPUTE}" != "" ] && [ "${NETWORK}" != "" ]; then
+      PACKSTACK_OPTIONS="${PACKSTACK_OPTIONS};CONFIG_CONTROLLER_HOST=${CONTROLLER%*,}"
+      PACKSTACK_OPTIONS="${PACKSTACK_OPTIONS};CONFIG_NETWORK_HOSTS=${NETWORK%*,}"
+      PACKSTACK_OPTIONS="${PACKSTACK_OPTIONS};CONFIG_COMPUTE_HOSTS=${COMPUTE%*,}"
+      run_controller "controller-${vm}" "${PACKSTACK_URI}" "${PACKSTACK_BRANCH}" \
+	"${OPM_URI}" "${OPM_BRANCH}" "${PACKSTACK_OPTIONS}" &
+    else
+      echoerr "Something went wrong with setting up nodes"
+      exit 1
+    fi
+  done
+  wait
+}
+

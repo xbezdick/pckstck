@@ -7,3 +7,5 @@ And as root prepare virtual machines for clonning:
 
 To finally run test do for example:
 #./run_test.sh  -m RSPECTestsInfra -o https://github.com/strider/openstack-puppet-modules.git -n f20,f21,c7 -r
+For more options see help:
+#./run_test.sh -h
