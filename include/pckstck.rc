@@ -111,7 +111,7 @@ function run_allinone()
   PACKSTACK_OPTIONS=${7}
   for vm in ${SOURCE_VMS//,/ }; do
     prepare_node "allinone-${vm}" "${RPM_REPO_URL}" && \
-    run_collector "allinone-${vm}" "${PACKSTACK_URI}" "${PACKSTACK_BRANCH}" \
+    run_controller "allinone-${vm}" "${PACKSTACK_URI}" "${PACKSTACK_BRANCH}" \
 	"${OPM_URI}" "${OPM_BRANCH}" &
   done
   wait
