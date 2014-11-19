@@ -68,7 +68,7 @@ autopart
 # core
 kernel*
 dracut-*
-
+bzip2*
 
 # Things needed for installation
 @anaconda-tools

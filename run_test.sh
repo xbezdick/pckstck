@@ -39,8 +39,10 @@ function prepare_multinode_vms()
   SOURCE_VMS=${1}
   for vm in ${SOURCE_VMS//,/ }; do
     for vm_type in ${VM_TYPES//,/ }; do
-      RUN prepare_virtpwn_vm "${vm_type}-${vm}" "${vm}" && \
-      RUN run_virtpwn_vm "${vm_type}-${vm}"
+      RUN prepare_virtpwn_vm "${vm_type}-${vm}" "${vm}" || return 1
+      # magical sleep to get VM up
+      sleep 30s;
+      RUN run_virtpwn_vm "${vm_type}-${vm}" || return 1
     done
   done
 }
@@ -212,16 +214,16 @@ else
       exit 1
     fi
   done
-  if $ALLINONE; then prepare_allinone_vms "${VMS}" && run_allinone "${VMS}" "${PACKSTACK_GIT}" "${PACKSTACK_BRANCH}" "${OPM_GIT}" "${OPM_BRANCH}" "${REPO}" "%{PACKSTACK_OPTIONS}" & fi
+  if $ALLINONE; then prepare_allinone_vms "${VMS}"; fi && \
+  if $MULTI; then prepare_multinode_vms "${VMS}"; fi && \
+  if $ALLINONE; then run_allinone "${VMS}" "${PACKSTACK_GIT}" "${PACKSTACK_BRANCH}" "${OPM_GIT}" "${OPM_BRANCH}" "${REPO}" "%{PACKSTACK_OPTIONS}" & fi
   if $MULTI; then prepare_multinode_vms "${VMS}" && run_multinode "${VMS}" "${PACKSTACK_GIT}" "${PACKSTACK_BRANCH}" "${OPM_GIT}" "${OPM_BRANCH}" "${REPO}" "${PACKSTACK_OPTIONS}" & fi
   wait
   if $KEEP_VMS;
   then
    exit 0
   fi
-  for vm in ${SOURCE_VMS//,/ }; do
-    RUN stop_virtpwn_vm "allinone-${vm}"
-    RUN drop_virtpwn_vm "allinone-${vm}"
-  done
+  if $ALLINONE; then delete_allinone_vms "${VMS}"; fi
+  if $MULTI; then delete_multinode_vms "${VMS}"; fi
 fi
 
