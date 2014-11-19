@@ -136,6 +136,7 @@ function run_multinode()
     CONTROLLER=""
     COMPUTE=""
     NETWORK=""
+    MAGIC=""
     for vm_type in ${VM_TYPES//,/ }; do
       NAME="${vm_type}-${vm}"
       cd ${PCKSTCK_DIR}/${NAME}
@@ -143,8 +144,10 @@ function run_multinode()
       echo "${vm_type}" | grep -q "controller" && CONTROLLER="${IP},"
       echo "${vm_type}" | grep -q "compute*" && COMPUTE="${COMPUTE}${IP},"
       echo "${vm_type}" | grep -q "network*" && NETWORK="${NETWORK}${IP},"
+      echo "${vm_type}" | grep -q "magic*" && MAGIC="${MAGIC}${IP},"
     done
     if  [ "${CONTROLLER}" != "" ] && [ "${COMPUTE}" != "" ] && [ "${NETWORK}" != "" ]; then
+      PACKSTACK_OPTIONS="${PACKSTACK_OPTIONS//MAGIC_NODE/$MAGIC}"
       PACKSTACK_OPTIONS="${PACKSTACK_OPTIONS};CONFIG_CONTROLLER_HOST=${CONTROLLER%*,}"
       PACKSTACK_OPTIONS="${PACKSTACK_OPTIONS};CONFIG_NETWORK_HOSTS=${NETWORK%*,}"
       PACKSTACK_OPTIONS="${PACKSTACK_OPTIONS};CONFIG_COMPUTE_HOSTS=${COMPUTE%*,}"

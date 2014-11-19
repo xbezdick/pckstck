@@ -74,7 +74,7 @@ function usage()
     -b|--packstack-branch <branch> Sets specific packstack branch to clone. Default: master
     -g|--packstack-git <url>       Sets packstack git url to clone.
                                    Default: https://github.com/stackforge/packstack.git
-    -m|--opm-branch <branch>       Sets specific opm branch to clone. Default: master
+    -m|--opm-branch <branch>       Sets specific opm branch to clone. Default: master-patches
     -o|--opm-git <url>             Sets opm git url to clone in setup.py.
                                    Default: https://github.com/redhat-openstack/openstack-puppet-modules.git
     -r|--repo <url>                Installs repo rpm from specified url. If unspecified no repo is used.
@@ -85,6 +85,9 @@ function usage()
                                    Controller Network and 2*Compute. Default: allinone
     -p|--packstack-options <o=v;.> Semicollon separated packstack config options which will be set to packstack
                                    config file with sed.
+    -x|--extra-node                Adds extra node to multinode deployment, if
+                                   you need to pass config option with IP of
+                                   this node use 'CONFIG=MAGIC_NODE'.
 EOF
 }
 
@@ -93,8 +96,8 @@ function echoerr()
 cat <<< "$@" 1>&2
 }
 
-SHORTOPTS="hkb::g::m::o::r::n:d::p:"
-LONGOPTS="help,packstack-branch::,packstack-git::,opm-branch::,opm-git::,repo::,source-vms:,keep,deploy::,packstack-options:"
+SHORTOPTS="hkxb::g::m::o::r::n:d::p:"
+LONGOPTS="help,extra-node,packstack-branch::,packstack-git::,opm-branch::,opm-git::,repo::,source-vms:,keep,deploy::,packstack-options:"
 PROGNAME=${0##*/}
 
 ARGS=$(getopt -s bash --options $SHORTOPTS  \
@@ -104,7 +107,7 @@ ARGS=$(getopt -s bash --options $SHORTOPTS  \
 # default options
 PACKSTACK_BRANCH='master'
 PACKSTACK_GIT='https://github.com/stackforge/packstack.git'
-OPM_BRANCH='master'
+OPM_BRANCH='master-patches'
 OPM_GIT='https://github.com/redhat-openstack/openstack-puppet-modules.git'
 KEEP_VMS=false
 DEPLOY='allinone'
@@ -164,6 +167,9 @@ while true; do
           ;;
         *) REPO="${2}" ; shift ;;
       esac
+      ;;
+    -x|--extra-node)
+      VM_TYPES="${VM_TYPES},magic"
       ;;
     -k|--keep)
       export KEEP_VMS=true
