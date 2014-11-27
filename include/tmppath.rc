@@ -8,3 +8,22 @@ function prepare_tmp_path()
   export PCKSTCK_DIR=${PCKSTCK_TMP}/${DATE}
 }
 
+# function logging wrapper expecting human readable function name and instance name as $1 and $2
+function RUN()
+{
+  COMMAND=${1}
+  NAME=${2}
+  mkdir -p ${PCKSTCK_DIR}/${NAME}
+  echo "Runnning ${COMMAND} on ${NAME} ..."
+  "$@" >> ${PCKSTCK_DIR}/${NAME}/${COMMAND}.log 2>&1
+  ret=$?
+  if [[ $ret -eq 0 ]]
+  then
+    echo "Success - ${COMMAND} on ${NAME}."
+  else
+    echo "FAIL - ${COMMAND} on ${NAME}."
+  fi
+  return $ret
+}
+
+

@@ -1,67 +1,9 @@
-#!/bin/bash
+#!/bin/bash 
 export LIBVIRT_DEFAULT_URI="qemu:///system"
 export VM_TYPES="controller,compute1,compute2,network"
 . $(dirname $0)/include/tmppath.rc
 . $(dirname $0)/include/virtpwn.rc
 . $(dirname $0)/include/pckstck.rc
-
-# function logging wrapper expecting human readable function name and instance name as $1 and $2
-function RUN()
-{
-  COMMAND=${1}
-  NAME=${2}
-  mkdir -p ${PCKSTCK_DIR}/${NAME}
-  echo "Runnning ${COMMAND} on ${NAME} ..."
-  "$@" >> ${PCKSTCK_DIR}/${NAME}/${COMMAND}.log 2>&1
-  ret=$?
-  if [[ $ret -eq 0 ]]
-  then
-    echo "Success - ${COMMAND} on ${NAME}."
-  else
-    echo "FAIL - ${COMMAND} on ${NAME}."
-  fi
-  return $ret
-}
-
-function delete_multinode_vms()
-{
-  SOURCE_VMS=${1}
-  for vm in ${SOURCE_VMS//,/ }; do
-    for vm_type in ${VM_TYPES//,/ }; do
-      RUN stop_virtpwn_vm "${vm_type}-${vm}"
-      RUN drop_virtpwn_vm "${vm_type}-${vm}"
-    done
-  done
-}
-
-function prepare_multinode_vms()
-{
-  SOURCE_VMS=${1}
-  for vm in ${SOURCE_VMS//,/ }; do
-    for vm_type in ${VM_TYPES//,/ }; do
-      RUN prepare_virtpwn_vm "${vm_type}-${vm}" "${vm}" || return 1
-      RUN run_virtpwn_vm "${vm_type}-${vm}" || return 1
-    done
-  done
-}
-
-function delete_allinone_vms()
-{
-  SOURCE_VMS=${1}
-  for vm in ${SOURCE_VMS//,/ }; do
-    RUN stop_virtpwn_vm "allinone-${vm}"
-    RUN drop_virtpwn_vm "allinone-${vm}"
-  done
-}
-
-function prepare_allinone_vms()
-{
-  SOURCE_VMS=${1}
-  for vm in ${SOURCE_VMS//,/ }; do
-    RUN prepare_virtpwn_vm "allinone-${vm}" "${vm}" && \
-    RUN run_virtpwn_vm "allinone-${vm}"
-  done
-}
 
 function usage()
 {
@@ -72,9 +14,8 @@ function usage()
     -b|--packstack-branch <branch> Sets specific packstack branch to clone. Default: master
     -g|--packstack-git <url>       Sets packstack git url to clone.
                                    Default: https://github.com/stackforge/packstack.git
-    -m|--opm-branch <branch>       Sets specific opm branch to clone. Default: master-patches
-    -o|--opm-git <url>             Sets opm git url to clone in setup.py.
-                                   Default: https://github.com/redhat-openstack/openstack-puppet-modules.git
+    -m|--opm-branch <branch>       Sets specific opm branch to clone. Default: branch set in packstack setup.py
+    -o|--opm-git <url>             Sets opm git url to clone in setup.py. Default: url set in packstack setup.py
     -r|--repo <url>                Installs repo rpm from specified url. If unspecified no repo is used.
                                    Default: https://repos.fedorapeople.org/repos/openstack/openstack-juno/rdo-release-juno-1.noarch.rpm
     -n|--source-vms <vms>          Comma separated list of VMs to use for clonning.
@@ -105,14 +46,14 @@ ARGS=$(getopt -s bash --options $SHORTOPTS  \
 # default options
 PACKSTACK_BRANCH='master'
 PACKSTACK_GIT='https://github.com/stackforge/packstack.git'
-OPM_BRANCH='master-patches'
-OPM_GIT='https://github.com/redhat-openstack/openstack-puppet-modules.git'
 KEEP_VMS=false
 DEPLOY='allinone'
 
 # options that can be empty
 REPO=""
 PACKSTACK_OPTIONS=""
+OPM_BRANCH=""
+OPM_GIT=""
 # required options
 VMS=""
 
@@ -144,7 +85,7 @@ while true; do
     -m|--opm-branch)
       case "${2}" in
         ""|-*)
-          echoerr "No branch specified. Using branch ${OPM_BRANCH}!" 
+          echoerr "No branch specified. Using branch from setup.py!" 
           ;;
         *) OPM_BRANCH="${2}" ; shift ;;
       esac
@@ -152,7 +93,7 @@ while true; do
     -o|--opm-git)
       case "${2}" in
         ""|-*)
-          echoerr "No omp git url specified. Using ${OPM_GIT}!"
+          echoerr "No omp git url specified. Using url from setup.py!"
           ;;
         *) OPM_GIT="${2}" ; shift ;;
       esac
@@ -182,7 +123,7 @@ while true; do
       esac
       ;;
     -p|--packstack-options)
-      PACKSTACK_OPTIONS="${2}"
+      PACKSTACK_OPTIONS="$( echo ${2} | sed -E 's/[[:space:]]+/\;/g')"
       shift
       ;;
     -n|--source-vms)
@@ -218,10 +159,16 @@ else
       exit 1
     fi
   done
-  if $ALLINONE; then prepare_allinone_vms "${VMS}"; fi && \
-  if $MULTI; then prepare_multinode_vms "${VMS}"; fi && \
-  if $ALLINONE; then run_allinone "${VMS}" "${PACKSTACK_GIT}" "${PACKSTACK_BRANCH}" "${OPM_GIT}" "${OPM_BRANCH}" "${REPO}" "%{PACKSTACK_OPTIONS}" & fi
-  if $MULTI; then prepare_multinode_vms "${VMS}" && run_multinode "${VMS}" "${PACKSTACK_GIT}" "${PACKSTACK_BRANCH}" "${OPM_GIT}" "${OPM_BRANCH}" "${REPO}" "${PACKSTACK_OPTIONS}" & fi
+  if $ALLINONE; then
+    for VM in ${VMS//,/ }; do
+      prepare_allinone_vms "${VM}" && run_allinone "${VM}" "${PACKSTACK_GIT}" "${PACKSTACK_BRANCH}" "${OPM_GIT}" "${OPM_BRANCH}" "${REPO}" "${PACKSTACK_OPTIONS}" &
+    done
+  fi
+  if $MULTI; then
+    for VM in ${VMS//,/ }; do
+      prepare_multinode_vms "${VM}" && run_multinode "${VM}" "${PACKSTACK_GIT}" "${PACKSTACK_BRANCH}" "${OPM_GIT}" "${OPM_BRANCH}" "${REPO}" "${PACKSTACK_OPTIONS}" &
+    done
+  fi
   wait
   if $KEEP_VMS;
   then

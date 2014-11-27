@@ -22,8 +22,36 @@ EOF
 function run_virtpwn_vm()
 {
   NAME=${1}
-  cd ${PCKSTCK_DIR}/${NAME}
-  virtpwn up
+  if [ "${NAME}" != "" ]; then
+    echo "${NAME} - NAME PASSED"
+    # check lock
+    for i in {1..600}; do
+      echo "${NAME} - LOOP ${i} of 600"
+      if [ -e ${PCKSTCK_DIR}/virtpwn_lock ]; then
+        SLEEP = "$(( ( RANDOM % 5 )  + 1 ))"
+        echo "${NAME} - SLEEP ${SLEEP}"
+        sleep "${SLEEP}"
+      else
+        echo "${NAME}" > ${PCKSTCK_DIR}/virtpwn_lock
+        if [ "$(cat ${PCKSTCK_DIR}/virtpwn_lock)" == "${NAME}" ]; then
+          echo "${NAME} - BUILDING"
+          cd ${PCKSTCK_DIR}/${NAME}
+          virtpwn up
+          if [ "$?" -ne 0 ]; then
+            rm -rf ${PCKSTCK_DIR}/virtpwn_lock
+            return 1
+          else
+            # give VM some time
+            rm -rf ${PCKSTCK_DIR}/virtpwn_lock
+            return 0
+          fi
+        fi
+        echo "${NAME} - COLLISION $(cat ${PCKSTCK_DIR}/virtpwn_lock)"
+      fi
+    done
+  else
+    return 1
+  fi
 }
 
 function stop_virtpwn_vm()
