@@ -56,7 +56,11 @@ function install_repo_on_vm()
   RPM_REPO_URL=${2}
   cd ${PCKSTCK_DIR}/${NAME}
   IP=$(get_vm_ip ${NAME})
-  ssh "root@${IP}" "yum -y install ${RPM_REPO_URL}"
+  if [[ ${RPM_REPO_URL} == *.rpm ]]; then
+    ssh "root@${IP}" "yum -y install ${RPM_REPO_URL}"
+  elif [[ ${RPM_REPO_URL} == *.repo ]]; then
+    ssh "root@${IP}" "curl \"${RPM_REPO_URL}\" > /etc/yum.repos.d/pckstck.repo"
+  fi
 }
 
 function update_vm()
