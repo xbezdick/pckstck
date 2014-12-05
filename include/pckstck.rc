@@ -19,6 +19,12 @@ function prepare_multinode_vms()
     done
   done
   wait
+  for vm in ${SOURCE_VMS//,/ }; do
+    for vm_type in ${VM_TYPES//,/ }; do
+      RUN provision_virtpwn_vm "${vm_type}-${vm}" || return 1 &
+    done
+  done
+  wait
 }
 
 function delete_allinone_vms()
@@ -36,6 +42,10 @@ function prepare_allinone_vms()
   for vm in ${SOURCE_VMS//,/ }; do
     RUN prepare_virtpwn_vm "allinone-${vm}" "${vm}" && \
     RUN run_virtpwn_vm "allinone-${vm}" || return 1 &
+  done
+  wait
+  for vm in ${SOURCE_VMS//,/ }; do
+    RUN provision_virtpwn_vm "allinone-${vm}" || return 1 &
   done
   wait
 }

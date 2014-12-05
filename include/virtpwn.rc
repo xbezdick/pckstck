@@ -26,22 +26,21 @@ function run_virtpwn_vm()
     echo "${NAME} - NAME PASSED"
     # check lock
     for i in {1..600}; do
-      echo "${NAME} - LOOP ${i} of 600"
+      echo "${NAME} - LOOP ${i} of 1000"
       if [ -e ${PCKSTCK_DIR}/virtpwn_lock ]; then
-        SLEEP = "$(( ( RANDOM % 5 )  + 1 ))"
+        SLEEP=$(( ( RANDOM % 5 )  + 1 ))
         echo "${NAME} - SLEEP ${SLEEP}"
-        sleep "${SLEEP}"
+        sleep ${SLEEP}
       else
         echo "${NAME}" > ${PCKSTCK_DIR}/virtpwn_lock
-        if [ "$(cat ${PCKSTCK_DIR}/virtpwn_lock)" == "${NAME}" ]; then
+        if [ "$(cat ${PCKSTCK_DIR}/virtpwn_lock | head -n1 |awk '{print $1}')" == "${NAME}" ]; then
           echo "${NAME} - BUILDING"
           cd ${PCKSTCK_DIR}/${NAME}
-          virtpwn up
+          virtpwn up -n
           if [ "$?" -ne 0 ]; then
             rm -rf ${PCKSTCK_DIR}/virtpwn_lock
             return 1
           else
-            # give VM some time
             rm -rf ${PCKSTCK_DIR}/virtpwn_lock
             return 0
           fi
@@ -52,6 +51,13 @@ function run_virtpwn_vm()
   else
     return 1
   fi
+}
+
+function provision_virtpwn_vm()
+{
+  NAME=${1}
+  cd ${PCKSTCK_DIR}/${NAME}
+  virtpwn provision -i
 }
 
 function stop_virtpwn_vm()
