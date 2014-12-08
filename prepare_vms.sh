@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # ensure system libvirt connection is used,
 # if this is continually asking for pass create libvirt polkit rule for your self
@@ -29,6 +29,7 @@ function prepare_vm()
 	-d ${NAME}
 }
 
-prepare_vm "f21" "https://dl.fedoraproject.org/pub/fedora/linux/releases/test/21-Alpha/Server/x86_64/os/" 
-prepare_vm "f20" "https://dl.fedoraproject.org/pub/fedora/linux/releases/20/Fedora/x86_64/os/"
+prepare_vm "rawhide" "http://ftp-stud.hs-esslingen.de/pub/fedora/linux/development/rawhide/x86_64/os/"
+prepare_vm "f21" "http://mirror.karneval.cz/pub/linux/fedora/linux/releases/test/21-Beta/Server/x86_64/os/"
+prepare_vm "f20" "http://mirror.karneval.cz/pub/linux/fedora/linux/releases/20/Fedora/x86_64/os/"
 prepare_vm "c7" "http://merlin.fit.vutbr.cz/mirrors/centos/7.0.1406/os/x86_64/"
