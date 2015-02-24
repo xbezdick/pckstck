@@ -22,14 +22,16 @@ function prepare_vm()
 	--nographics \
 	--noreboot \
         || exit 1
-  virt-customize -d ${NAME} --update --selinux-relabel --run-command 'sed -i -e "s/enforcing/permissive/" /etc/sysconfig/selinux'
+  virt-customize -d ${NAME} --update \
+        --run-command 'sed -i -e "s/enforcing/permissive/" /etc/sysconfig/selinux' \
+        --run-command 'dracut --force /boot/initramfs-$(uname -r).img $(uname -r)'
   virt-sysprep \
 	--hostname ${NAME} \
 	--enable "customize,logfiles,net-hostname,net-hwaddr,puppet-data-log,udev-persistent-net" \
 	-d ${NAME}
 }
 
-prepare_vm "rawhide" "http://ftp-stud.hs-esslingen.de/pub/fedora/linux/development/rawhide/x86_64/os/"
-prepare_vm "f21" "http://mirror.karneval.cz/pub/linux/fedora/linux/releases/test/21-Beta/Server/x86_64/os/"
+prepare_vm "f22" "http://ftp-stud.hs-esslingen.de/pub/fedora/linux/development/22/x86_64/os/"
+prepare_vm "f21" "http://mirror.karneval.cz/pub/linux/fedora/linux/releases/21/Server/x86_64/os/"
 prepare_vm "f20" "http://mirror.karneval.cz/pub/linux/fedora/linux/releases/20/Fedora/x86_64/os/"
 prepare_vm "c7" "http://merlin.fit.vutbr.cz/mirrors/centos/7.0.1406/os/x86_64/"
