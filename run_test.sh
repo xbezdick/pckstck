@@ -1,9 +1,9 @@
 #!/bin/bash 
 export LIBVIRT_DEFAULT_URI="qemu:///system"
-export VM_TYPES="controller,compute1,compute2,network"
+export VM_TYPES="controller,compute1,compute2,network1"
 . $(dirname $0)/include/tmppath.rc
 . $(dirname $0)/include/virtpwn.rc
-. $(dirname $0)/include/pckstck.rc
+. $(dirname $0)/include/pckstck.sh
 
 function usage()
 {
@@ -35,8 +35,8 @@ function echoerr()
 cat <<< "$@" 1>&2
 }
 
-SHORTOPTS="hkxb::g::m::o::r::n:d::p:"
-LONGOPTS="help,extra-node,packstack-branch::,packstack-git::,opm-branch::,opm-git::,repo::,source-vms:,keep,deploy::,packstack-options:"
+SHORTOPTS="ht6kxb::g::m::o::r::n:d::p:"
+LONGOPTS="help,extra-node,packstack-branch::,packstack-git::,opm-branch::,opm-git::,repo::,source-vms:,keep,test,ipv6,deploy::,packstack-options:"
 PROGNAME=${0##*/}
 
 ARGS=$(getopt -s bash --options $SHORTOPTS  \
@@ -47,7 +47,9 @@ ARGS=$(getopt -s bash --options $SHORTOPTS  \
 PACKSTACK_BRANCH='master'
 PACKSTACK_GIT='https://github.com/stackforge/packstack.git'
 KEEP_VMS=false
+TEST=false
 DEPLOY='allinone'
+export IPV6=false
 
 # options that can be empty
 REPO=""
@@ -110,6 +112,9 @@ while true; do
     -x|--extra-node)
       VM_TYPES="${VM_TYPES},magic"
       ;;
+    -6|--ipv6)
+      export IPV6=true
+      ;;
     -k|--keep)
       export KEEP_VMS=true
       ;;
@@ -159,6 +164,7 @@ else
       exit 1
     fi
   done
+
   if $ALLINONE; then
     for VM in ${VMS//,/ }; do
       prepare_allinone_vms "${VM}" && run_allinone "${VM}" "${PACKSTACK_GIT}" "${PACKSTACK_BRANCH}" "${OPM_GIT}" "${OPM_BRANCH}" "${REPO}" "${PACKSTACK_OPTIONS}" &
@@ -170,6 +176,36 @@ else
     done
   fi
   wait
+
+  if $TEST; then
+    if $MULTI; then
+       for VM in ${VMS//,/ }; do
+         if [[ ${VM_TYPES} == *"magic"* ]]; then
+           RUN run_rally "magic-${VM}" "controller-${VM}" &
+         else
+           RUN run_rally "controller-${VM}" "controller-${VM}" &
+         fi
+       done
+    fi
+    wait
+  fi
+
+  # ensure we have local stored logs
+  if $ALLINONE; then
+    for VM in ${VMS//,/ }; do
+      RUN collect_logs "allinone-${VM}" &
+    done
+  fi
+  if $MULTI; then
+    for VM in ${VMS//,/ }; do
+      for vm_type in ${VM_TYPES//,/ }; do
+        NAME="${vm_type}-${VM}"
+        RUN collect_logs "${NAME}" &
+      done
+    done
+  fi
+  wait
+
   if $KEEP_VMS;
   then
    exit 0
