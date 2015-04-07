@@ -130,7 +130,7 @@ function setup_packstack()
   echo ${OPM_URI}
   cd ${PCKSTCK_DIR}/${NAME}
   IP=$(get_vm_ip ${NAME})
-  ssh "root@${IP}" 'yum -y install git PyYAML python-setuptools' && \
+  ssh "root@${IP}" 'yum -y install git PyYAML python-setuptools python-netaddr' && \
   ssh "root@${IP}" "git clone ${PACKSTACK_URI} packstack" && \
   ssh "root@${IP}" "cd packstack; git checkout ${PACKSTACK_BRANCH}" || return 1
   if [ "${OPM_URI}" != "" ]; then
