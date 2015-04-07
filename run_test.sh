@@ -115,6 +115,9 @@ while true; do
     -6|--ipv6)
       export IPV6=true
       ;;
+    -t|--test)
+      export TEST=true
+      ;;
     -k|--keep)
       export KEEP_VMS=true
       ;;

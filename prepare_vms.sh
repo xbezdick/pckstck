@@ -17,7 +17,7 @@ function prepare_vm()
         -x "ks=file:/fedora-install-minimal.ks console=tty0 console=ttyS0,115200" \
 	--name ${NAME} \
 	--ram 4096 \
-	--disk size=20 \
+	--disk size=25 \
 	--location ${LOCATION} \
 	--nographics \
 	--noreboot \
@@ -31,7 +31,7 @@ function prepare_vm()
 	-d ${NAME}
 }
 
-#prepare_vm "f22" "http://ftp-stud.hs-esslingen.de/pub/fedora/linux/development/22/x86_64/os/"
-#prepare_vm "f21" "http://mirror.karneval.cz/pub/linux/fedora/linux/releases/21/Server/x86_64/os/"
-#prepare_vm "f20" "http://mirror.karneval.cz/pub/linux/fedora/linux/releases/20/Fedora/x86_64/os/"
+prepare_vm "f22" "http://ftp-stud.hs-esslingen.de/pub/fedora/linux/development/22/x86_64/os/"
+prepare_vm "f21" "http://mirror.karneval.cz/pub/linux/fedora/linux/releases/21/Server/x86_64/os/"
+prepare_vm "f20" "http://mirror.karneval.cz/pub/linux/fedora/linux/releases/20/Fedora/x86_64/os/"
 prepare_vm "c7" "http://merlin.fit.vutbr.cz/mirrors/centos/7.0.1406/os/x86_64/"

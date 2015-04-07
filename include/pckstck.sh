@@ -179,10 +179,10 @@ function prepare_node()
   RPM_REPO_URL=${2}
   if [ "${RPM_REPO_URL}" != "" ]
   then
-    RUN install_repo_on_vm ${NAME} ${RPM_REPO_URL} || return 1
+    RUN install_repo_on_vm "${NAME}" "${RPM_REPO_URL}" || return 1
   fi
-  RUN update_vm ${NAME} && \
-  RUN selinux_permissive_vm ${NAME}
+  RUN update_vm "${NAME}" && \
+  RUN selinux_permissive_vm "${NAME}"
 }
 
 function run_controller()
@@ -193,10 +193,10 @@ function run_controller()
   OPM_URI=${4}
   OPM_BRANCH=${5}
   PACKSTACK_OPTIONS=${6}
-  RUN setup_packstack ${NAME} ${PACKSTACK_URI} ${PACKSTACK_BRANCH} ${OPM_URI} ${OPM_BRANCH} && \
-  RUN configure_packstack ${NAME} ${PACKSTACK_OPTIONS} && \
-  RUN run_packstack_config ${NAME} /root/pckstck.conf | tee ${PCKSTCK_DIR}/${NAME}/packstack.log && \
-  RUN run_packstack_config ${NAME} /root/pckstck.conf | tee ${PCKSTCK_DIR}/${NAME}/packstack2.log
+  RUN setup_packstack "${NAME}" "${PACKSTACK_URI}" "${PACKSTACK_BRANCH}" "${OPM_URI}" "${OPM_BRANCH}" && \
+  RUN configure_packstack "${NAME}" "${PACKSTACK_OPTIONS}" && \
+  RUN run_packstack_config "${NAME}" /root/pckstck.conf | tee ${PCKSTCK_DIR}/${NAME}/packstack.log && \
+  RUN run_packstack_config "${NAME}" /root/pckstck.conf | tee ${PCKSTCK_DIR}/${NAME}/packstack2.log
 }
 
 function run_allinone()

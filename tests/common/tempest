@@ -1,0 +1,3 @@
+CONFIG_PROVISION_TEMPEST=y
+CONFIG_PROVISION_TEMPEST_USER=demo
+CONFIG_PROVISION_TEMPEST_REPO_URI=https://github.com/redhat-openstack/tempest.git
