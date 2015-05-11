@@ -9,20 +9,21 @@ function run_rally()
   ADMIN="$(ssh root@${CONTROLLERIP} 'cat keystonerc_admin')"
   ssh "root@${IP}" 'yum -y install git'
   ssh "root@${IP}" 'git clone https://github.com/stackforge/rally.git' && \
-  ssh "root@${IP}" 'cd rally && sed -i -e "s/cirros\(.*\)uec/cirros\1/" $( git grep -l cirros.*uec )' && \
-  ssh "root@${IP}" 'cd rally && sed -i -e "s/size: 10/size: 1/" $( git grep -l "size: 10" )' && \
-  ssh "root@${IP}" 'cd rally && sed -i -e "s/size\": 10/size\": 1/" $( git grep -l "size\": 10" )' && \
+#  ssh "root@${IP}" 'cd rally && sed -i -e "s/cirros\(.*\)uec/cirros\1/" $( git grep -l cirros.*uec )' && \
+#  ssh "root@${IP}" 'cd rally && sed -i -e "s/size: 10/size: 1/" $( git grep -l "size: 10" )' && \
+#  ssh "root@${IP}" 'cd rally && sed -i -e "s/size\": 10/size\": 1/" $( git grep -l "size\": 10" )' && \
   ssh "root@${IP}" 'sh rally/install_rally.sh' && \
   ssh "root@${IP}" "cat <<EOF > keystonerc_admin
 ${ADMIN}
 EOF" && \
   ssh "root@${IP}" '. keystonerc_admin ; rally deployment create --fromenv --name=existing' && \
   ssh "root@${IP}" '. keystonerc_admin ; nova flavor-create m1.nano 42 64 0 1' && \
-  ssh "root@${IP}" 'rally show images ; rally show flavors' && \
-  ssh "root@${IP}" 'for task in rally/samples/tasks/scenarios/{keystone,nova,neutron,glance,cinder,ceilometer}/*.yaml; do OUT="$(cat ${task})" ; number_of_occurrences=$(grep -o " " <<< "$(head -n2 ${task} | grep -v -- ---)"|wc -l) ; for i in $(seq 1 $number_of_occurrences); do OUT=$(echo "${OUT}" | sed  -e "s/^ //")  ; done ; echo "${OUT}"   ; done  | grep -v -- --- > pckstck.yaml' && \
-  ssh "root@${IP}" 'rally -v task start pckstck.yaml' && \
-  ssh "root@${IP}" 'rally task report --out=pckstck.html --open' && \
-  ssh "root@${IP}" 'cat pckstck.html' > pckstck.html
+#  ssh "root@${IP}" 'rally show images ; rally show flavors' && \
+#  ssh "root@${IP}" 'for task in rally/samples/tasks/scenarios/{keystone,nova,neutron,glance,cinder,ceilometer}/*.yaml; do OUT="$(cat ${task})" ; number_of_occurrences=$(grep -o " " <<< "$(head -n2 ${task} | grep -v -- ---)"|wc -l) ; for i in $(seq 1 $number_of_occurrences); do OUT=$(echo "${OUT}" | sed  -e "s/^ //")  ; done ; echo "${OUT}"   ; done  | grep -v -- --- > pckstck.yaml' && \
+  ssh "root@${IP}" 'rally verify start '
+#  ssh "root@${IP}" 'rally -v task start pckstck.yaml' && \
+#  ssh "root@${IP}" 'rally task report --out=pckstck.html --open' && \
+#  ssh "root@${IP}" 'cat pckstck.html' > pckstck.html
 }
 
 function get_vm_packstack_ip()
@@ -130,7 +131,7 @@ function setup_packstack()
   echo ${OPM_URI}
   cd ${PCKSTCK_DIR}/${NAME}
   IP=$(get_vm_ip ${NAME})
-  ssh "root@${IP}" 'yum -y install git PyYAML python-setuptools python-netaddr' && \
+  ssh "root@${IP}" 'yum -y install git PyYAML python-setuptools python-netaddr pyOpenSSL' && \
   ssh "root@${IP}" "git clone ${PACKSTACK_URI} packstack" && \
   ssh "root@${IP}" "cd packstack; git checkout ${PACKSTACK_BRANCH}" || return 1
   if [ "${OPM_URI}" != "" ]; then
