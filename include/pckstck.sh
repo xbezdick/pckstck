@@ -150,7 +150,8 @@ function configure_packstack()
   PACKSTACK_OPTIONS=${2}
   cd ${PCKSTCK_DIR}/${NAME}
   IP=$(get_vm_ip ${NAME})
-  ssh "root@${IP}" "packstack --gen-answer-file=/root/pckstck.conf" && \
+  DEFAULT_PASS=$(echo ${PACKSTACK_OPTIONS} | sed -e 's/;/\n/g' | grep CONFIG_DEFAULT_PASSWORD | cut -f2 -d'=')
+  ssh "root@${IP}" "packstack --gen-answer-file=/root/pckstck.conf --default-password=${DEFAULT_PASS}" && \
   for config in ${PACKSTACK_OPTIONS//;/ }; do
     OPT=$(echo ${config} | cut -f1 -d'=')
     VAL=$(echo ${config} | cut -f2 -d'=')
