@@ -71,6 +71,7 @@ kernel*
 dracut-*
 bzip2*
 yum
+auditd
 
 # Things needed for installation
 @anaconda-tools

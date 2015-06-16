@@ -117,7 +117,6 @@ function selinux_permissive_vm()
   cd ${PCKSTCK_DIR}/${NAME}
   IP=$(get_vm_ip ${NAME})
   ssh "root@${IP}" 'setenforce 0; sed -i -e "s/enforcing/permissive/" /etc/sysconfig/selinux' && \
-  ssh "root@${IP}" 'yum -y install policycoreutils-python auditd' && \
   ssh "root@${IP}" 'service auditd restart'
 }
 
