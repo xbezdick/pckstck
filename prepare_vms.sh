@@ -31,7 +31,7 @@ function prepare_vm()
 	-d ${NAME}
 }
 
-prepare_vm "f22" "http://ftp-stud.hs-esslingen.de/pub/fedora/linux/development/22/x86_64/os/"
-prepare_vm "f21" "http://mirror.karneval.cz/pub/linux/fedora/linux/releases/21/Server/x86_64/os/"
-prepare_vm "f20" "http://mirror.karneval.cz/pub/linux/fedora/linux/releases/20/Fedora/x86_64/os/"
-prepare_vm "c7" "http://merlin.fit.vutbr.cz/mirrors/centos/7.0.1406/os/x86_64/"
+prepare_vm "rawhide" "http://ftp.upjs.sk/pub/fedora/linux/development/rawhide/x86_64/os/"
+prepare_vm "f23" "http://ftp.upjs.sk/pub/fedora/linux/development/23/x86_64/os/"
+prepare_vm "f22" "http://ftp.upjs.sk/pub/fedora/linux/releases/22/Server/x86_64/os/"
+prepare_vm "c7" "http://merlin.fit.vutbr.cz/mirrors/centos/7/os/x86_64/"
