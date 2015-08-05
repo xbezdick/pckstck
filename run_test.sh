@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 export LIBVIRT_DEFAULT_URI="qemu:///system"
 export VM_TYPES="controller,compute1,compute2,network1"
 . $(dirname $0)/include/tmppath.rc
@@ -47,6 +47,7 @@ ARGS=$(getopt -s bash --options $SHORTOPTS  \
 PACKSTACK_BRANCH='master'
 PACKSTACK_GIT='https://github.com/stackforge/packstack.git'
 KEEP_VMS=false
+RALLY=false
 TEST=false
 DEPLOY='allinone'
 export IPV6=false
@@ -115,6 +116,9 @@ while true; do
     -6|--ipv6)
       export IPV6=true
       ;;
+    -R|--rally)
+      export RALLY=true
+      ;;
     -t|--test)
       export TEST=true
       ;;
@@ -168,6 +172,11 @@ else
     fi
   done
 
+  if $TEST; then
+    PACKSTACK_OPTIONS="${PACKSTACK_OPTIONS};CONFIG_PROVISION_TEMPEST=y"
+    PACKSTACK_OPTIONS="${PACKSTACK_OPTIONS};CONFIG_PROVISION_TEMPEST_REPO_URI=https://github.com/redhat-openstack/tempest.git"
+  fi
+
   if $ALLINONE; then
     for VM in ${VMS//,/ }; do
       prepare_allinone_vms "${VM}" && run_allinone "${VM}" "${PACKSTACK_GIT}" "${PACKSTACK_BRANCH}" "${OPM_GIT}" "${OPM_BRANCH}" "${REPO}" "${PACKSTACK_OPTIONS}" &
@@ -181,6 +190,18 @@ else
   wait
 
   if $TEST; then
+    for VM in ${VMS//,/ }; do
+      if $MULTI; then
+        RUN setup_tempest_test "controller-${VM}" && RUN run_tempest_test "controller-${VM}" &
+      fi
+      if $ALLINONE; then
+        RUN setup_tempest_test "allinone-${VM}" && RUN run_tempest_test "allinone-${VM}" &
+      fi
+    done
+    wait
+  fi
+
+  if $RALLY; then
     if $MULTI; then
        for VM in ${VMS//,/ }; do
          if [[ ${VM_TYPES} == *"magic"* ]]; then

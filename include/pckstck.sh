@@ -26,6 +26,26 @@ EOF" && \
 #  ssh "root@${IP}" 'cat pckstck.html' > pckstck.html
 }
 
+function run_tempest_test()
+{
+  NAME=${1}
+  cd ${PCKSTCK_DIR}/${NAME}
+  IP=$(get_vm_ip ${NAME})
+  ssh "root@${IP}" 'cd /var/lib/tempest ; tox -esmoke'
+}
+
+function setup_tempest_test()
+{
+  NAME=${1}
+  cd ${PCKSTCK_DIR}/${NAME}
+  IP=$(get_vm_ip ${NAME})
+  ADMIN_PASS="$(ssh root@${IP} 'cat ~/keystonerc_admin  | grep PASSWORD | cut -d= -f2')"
+  DEMO_PASS="$(ssh root@${IP} 'cat ~/keystonerc_demo  | grep PASSWORD | cut -d= -f2')"
+  ssh "root@${IP}" 'cd /var/lib/tempest ; python setup.py install' && \
+#  ssh "root@${IP}" 'yum -y install python-pip; pip install tempest-lib' && \
+  ssh "root@${IP}" "cd /var/lib/tempest ;python tools/config_tempest.py  --out etc/tempest.conf --create identity.uri http://${IP}:5000/v2.0/ compute.allow_tenant_isolation true object-storage.operator_role SwiftOperator identity.admin_password ${ADMIN_PASS} identity.password ${DEMO_PASS}"
+}
+
 function get_vm_packstack_ip()
 {
   NAME=${1}
@@ -151,12 +171,14 @@ function configure_packstack()
   cd ${PCKSTCK_DIR}/${NAME}
   IP=$(get_vm_ip ${NAME})
   DEFAULT_PASS=$(echo ${PACKSTACK_OPTIONS} | sed -e 's/;/\n/g' | grep CONFIG_DEFAULT_PASSWORD | cut -f2 -d'=')
+  echo ${PACKSTACK_OPTIONS}
   ssh "root@${IP}" "packstack --gen-answer-file=/root/pckstck.conf --default-password=${DEFAULT_PASS}" && \
   for config in ${PACKSTACK_OPTIONS//;/ }; do
+    echo $config
     OPT=$(echo ${config} | cut -f1 -d'=')
     VAL=$(echo ${config} | cut -f2 -d'=')
     if [ "${OPT}" != "" ] && [ "${VAL}" != "" ]; then
-      ssh "root@${IP}" "sed -i -e 's;^${OPT}.*$;${OPT}=${VAL};' /root/pckstck.conf" || return 1
+      ssh "root@${IP}" "sed -i -e 's;^${OPT}=.*$;${OPT}=${VAL};' /root/pckstck.conf" || return 1
     fi
   done
   CONFIG_CONTROLLER_IP=$(get_vm_packstack_ip ${NAME})
@@ -214,7 +236,7 @@ function run_allinone()
   for vm in ${SOURCE_VMS//,/ }; do
     prepare_node "allinone-${vm}" "${RPM_REPO_URL}" && \
     run_controller "allinone-${vm}" "${PACKSTACK_URI}" "${PACKSTACK_BRANCH}" \
-	"${OPM_URI}" "${OPM_BRANCH}" &
+	"${OPM_URI}" "${OPM_BRANCH}" "${PACKSTACK_OPTIONS}" &
   done
   wait
 }
