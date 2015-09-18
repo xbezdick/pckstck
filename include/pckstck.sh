@@ -265,10 +265,17 @@ function run_multinode()
       NAME="${vm_type}-${vm}"
       cd ${PCKSTCK_DIR}/${NAME}
       IP=$(get_vm_packstack_ip ${NAME})
-      echo "${vm_type}" | grep -q "controller" && CONTROLLER="${IP},"
-      echo "${vm_type}" | grep -q "compute*" && COMPUTE="${COMPUTE}${IP},"
-      echo "${vm_type}" | grep -q "network*" && NETWORK="${NETWORK}${IP},"
-      echo "${vm_type}" | grep -q "magic*" && MAGIC="${MAGIC}${IP},"
+      if $USE_DNS; then
+        echo "${vm_type}" | grep -q "controller" && CONTROLLER="${NAME},"
+        echo "${vm_type}" | grep -q "compute*" && COMPUTE="${COMPUTE}${NAME},"
+        echo "${vm_type}" | grep -q "network*" && NETWORK="${NETWORK}${NAME},"
+        echo "${vm_type}" | grep -q "magic*" && MAGIC="${MAGIC}${NAME},"
+      else
+        echo "${vm_type}" | grep -q "controller" && CONTROLLER="${IP},"
+        echo "${vm_type}" | grep -q "compute*" && COMPUTE="${COMPUTE}${IP},"
+        echo "${vm_type}" | grep -q "network*" && NETWORK="${NETWORK}${IP},"
+        echo "${vm_type}" | grep -q "magic*" && MAGIC="${MAGIC}${IP},"
+      fi
     done
     if  [ "${CONTROLLER}" != "" ] && [ "${COMPUTE}" != "" ] && [ "${NETWORK}" != "" ]; then
       PACKSTACK_OPTIONS="${PACKSTACK_OPTIONS//MAGIC_NODE/${MAGIC%*,}}"

@@ -35,8 +35,8 @@ function echoerr()
 cat <<< "$@" 1>&2
 }
 
-SHORTOPTS="ht6kxb::g::m::o::r::n:d::p:"
-LONGOPTS="help,extra-node,packstack-branch::,packstack-git::,opm-branch::,opm-git::,repo::,source-vms:,keep,test,ipv6,deploy::,packstack-options:"
+SHORTOPTS="htz6kxb::g::m::o::r::n:d::p:"
+LONGOPTS="help,extra-node,packstack-branch::,packstack-git::,opm-branch::,opm-git::,repo::,source-vms:,keep,dns,test,ipv6,deploy::,packstack-options:"
 PROGNAME=${0##*/}
 
 ARGS=$(getopt -s bash --options $SHORTOPTS  \
@@ -49,6 +49,7 @@ PACKSTACK_GIT='https://github.com/stackforge/packstack.git'
 KEEP_VMS=false
 RALLY=false
 TEST=false
+USE_DNS=false
 DEPLOY='allinone'
 export IPV6=false
 
@@ -121,6 +122,9 @@ while true; do
       ;;
     -t|--test)
       export TEST=true
+      ;;
+    -z|--dns)
+      export USE_DNS=true
       ;;
     -k|--keep)
       export KEEP_VMS=true
